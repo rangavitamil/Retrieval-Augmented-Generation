@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Study RAG Chatbot</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: Arial, sans-serif;
+            background: #f4f7fb;
+            color: #172033;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .chatbot {
+            width: min(900px, 94vw);
+            height: min(760px, 92vh);
+            background: #ffffff;
+            border: 1px solid #e1e6ef;
+            border-radius: 18px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 12px 40px rgba(25, 40, 70, 0.10);
+        }
+
+        .header {
+            padding: 20px 24px;
+            border-bottom: 1px solid #e8ecf2;
+            background: #ffffff;
+        }
+
+        .header h1 {
+            margin: 0 0 5px;
+            font-size: 22px;
+        }
+
+        .header p {
+            margin: 0;
+            color: #667085;
+            font-size: 14px;
+        }
+
+        .messages {
+            flex: 1;
+            padding: 24px;
+            overflow-y: auto;
+        }
+
+        .message {
+            max-width: 78%;
+            padding: 12px 15px;
+            margin-bottom: 14px;
+            border-radius: 14px;
+            line-height: 1.55;
+            white-space: pre-wrap;
+        }
+
+        .bot {
+            background: #f0f3f8;
+            margin-right: auto;
+        }
+
+        .user {
+            background: #1f6feb;
+            color: #ffffff;
+            margin-left: auto;
+        }
+
+        .composer {
+            padding: 16px;
+            border-top: 1px solid #e8ecf2;
+            display: flex;
+            gap: 10px;
+        }
+
+        textarea {
+            flex: 1;
+            resize: none;
+            min-height: 48px;
+            max-height: 140px;
+            border: 1px solid #d7dde7;
+            border-radius: 12px;
+            padding: 13px;
+            font: inherit;
+            outline: none;
+        }
+
+        textarea:focus {
+            border-color: #1f6feb;
+        }
+
+        button {
+            border: 0;
+            border-radius: 12px;
+            padding: 0 22px;
+            background: #1f6feb;
+            color: #ffffff;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <main class="chatbot">
+        <header class="header">
+            <h1>Study RAG Chatbot</h1>
+            <p>Ask questions related to your provided study material.</p>
+        </header>
+
+        <section class="messages" id="messages">
+            <div class="message bot">
+                Hello! I can answer study-related questions using the retrieved study material.
+            </div>
+        </section>
+
+        <form class="composer" id="chatForm">
+            <textarea
+                id="message"
+                placeholder="Ask a study question..."
+                aria-label="Study question"
+                required
+            ></textarea>
+            <button type="submit" id="sendButton">Send</button>
+        </form>
+    </main>
+
+    <script>
+        const form = document.getElementById("chatForm");
+        const input = document.getElementById("message");
+        const messages = document.getElementById("messages");
+        const sendButton = document.getElementById("sendButton");
+
+        function addMessage(text, type) {
+            const element = document.createElement("div");
+            element.className = `message ${type}`;
+            element.textContent = text;
+            messages.appendChild(element);
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        form.addEventListener("submit", async (event) => {
+            event.preventDefault();
+
+            const message = input.value.trim();
+            if (!message) return;
+
+            addMessage(message, "user");
+            input.value = "";
+            sendButton.disabled = true;
+
+            try {
+                const response = await fetch("/chat", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ message })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || "Request failed.");
+                }
+
+                addMessage(data.answer, "bot");
+            } catch (error) {
+                addMessage(error.message || "Something went wrong.", "bot");
+            } finally {
+                sendButton.disabled = false;
+                input.focus();
+            }
+        });
+
+        input.addEventListener("keydown", (event) => {
+            if (event.key === "Enter" && !event.shiftKey) {
+                event.preventDefault();
+                form.requestSubmit();
+            }
+        });
+    </script>
+</body>
+</html>
